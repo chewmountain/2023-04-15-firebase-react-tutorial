@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Auth } from "./components/auth";
-import { db } from "./config/firebase";
+import { db, auth, storage } from "./config/firebase";
 import {
   getDocs,
   collection,
@@ -9,6 +9,7 @@ import {
   updateDoc,
   doc,
 } from "firebase/firestore";
+import { ref, uploadBytes } from "firebase/storage";
 
 const App = () => {
   const [movieList, setMovieList] = useState([]);
@@ -18,9 +19,13 @@ const App = () => {
   const [newRealeseDate, setNewRealeseDate] = useState(0);
   const [isNewMovieOscar, setIsNewMovieOscar] = useState(false);
 
+  // File uploding state
+  const [fileUpload, setFileUpload] = useState(null);
+
   // Update title state
   const [updatedTitle, setUpdatedTitle] = useState("");
 
+  // Get table collection from firebase
   const moviesCollectionRef = collection(db, "movies");
 
   // Function that gets all data from database
@@ -71,9 +76,24 @@ const App = () => {
         title: newMovieTitle,
         releaseDate: newRealeseDate,
         recievedAnOskar: isNewMovieOscar,
+        // you can create, update and delete if you're loggin
+        // if you not, you can only read data
+        // you should write rules in firestore!
+        userId: auth?.currentUser?.uid,
       });
 
       getMovieList();
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  const uploadFile = async () => {
+    if (!fileUpload) return;
+
+    const filesFolderRef = ref(storage, `project-files/${fileUpload.name}`);
+    try {
+      await uploadBytes(filesFolderRef, fileUpload);
     } catch (error) {
       console.error(error);
     }
@@ -125,6 +145,8 @@ const App = () => {
           </li>
         ))}
       </ul>
+      <input type="file" onChange={(e) => setFileUpload(e.target.files[0])} />
+      <button onClick={uploadFile}>Upload file</button>
     </div>
   );
 };
